@@ -7,10 +7,35 @@ const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
 
+const allowedOrigins = [
+  "https://bhavesh-task-management-app.netlify.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+];
+
+if (process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN.split(",")
+    .map((o) => o.trim())
+    .filter(Boolean)
+    .forEach((o) => {
+      if (!allowedOrigins.includes(o)) allowedOrigins.push(o);
+    });
+}
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalized = origin.replace(/\/$/, "");
+      if (allowedOrigins.includes(normalized)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-refresh-token"],
   })
 );
 app.use(express.json({ limit: "10kb" }));
